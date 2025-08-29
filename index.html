@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Convivencia - Colegio Colsubsidio Chicalá</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #312e81, #8b5cf6, #ec4899);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+    .container { max-width: 900px; }
+    .card {
+      background-color: white;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+    }
+    .quiz-btn {
+      background-color: #fcd34d;
+      color: #1f2937;
+      padding: 1rem 2rem;
+      border-radius: 9999px;
+      font-weight: bold;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .quiz-btn:hover {
+      background-color: #fbbf24;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .question-card { background-color: #e2e8f0; border-radius: 1rem; padding: 1.5rem; margin-bottom: 1rem; }
+    .answer-option {
+      background-color: #f7fafc;
+      padding: 1rem;
+      border-radius: 0.75rem;
+      border: 2px solid #cbd5e0;
+      cursor: pointer;
+    }
+    .answer-option:hover { background-color: #e2e8f0; border-color: #a0aec0; }
+    .answer-option.selected { background-color: #fef08a; border-color: #facc15; }
+    .submit-btn {
+      background-color: #fcd34d;
+      color: #1f2937;
+      padding: 1rem 2rem;
+      border-radius: 0.75rem;
+      font-weight: bold;
+    }
+    .submit-btn:hover { background-color: #fbbf24; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center;
+    }
+    .modal-content {
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="p-8">
+
+  <!-- Pantalla de bienvenida -->
+  <div id="welcome-section" class="container mx-auto p-8 card text-center">
+    <h1 class="text-4xl font-bold text-blue-800 mb-4">¡Todos por un territorio seguro! 🛡️</h1>
+    <p class="text-xl text-blue-700 mb-8">Conviértete en un experto en convivencia escolar</p>
+    <div class="flex justify-center mb-8">
+      <img src="https://primaria3naranjos.wordpress.com/wp-content/uploads/2016/11/convivencia.jpg?w=640" 
+           alt="Imagen convivencia" class="rounded-lg w-full max-w-xs object-cover">
+    </div>
+    <div class="flex flex-wrap justify-center gap-4">
+      <button type="button" id="start-learning-btn" class="submit-btn">Zona de Aprendizaje 📚</button>
+      <button type="button" id="start-quiz-btn" class="quiz-btn">Zona de Evaluación ✅</button>
+    </div>
+  </div>
+
+  <!-- Zona de evaluación -->
+  <div id="quiz-section" class="container mx-auto p-8 card hidden">
+    <h2 class="text-3xl font-bold text-blue-800 mb-6 text-center">Zona de Evaluación 📝</h2>
+    <form id="quiz-form">
+      <div class="mb-4">
+        <label class="block text-blue-700 text-sm font-bold mb-2">Nombre Completo:</label>
+        <input type="text" id="quiz-name" class="border rounded-lg w-full py-2 px-3" required>
+      </div>
+      <div class="mb-6">
+        <label class="block text-blue-700 text-sm font-bold mb-2">Área:</label>
+        <input type="text" id="quiz-area" class="border rounded-lg w-full py-2 px-3" required>
+      </div>
+      <div id="questions-container"></div>
+      <button type="submit" id="submit-quiz-btn" class="submit-btn w-full mt-8">Finalizar Evaluación 🚀</button>
+    </form>
+    <div id="results" class="hidden mt-8"></div>
+    <div class="mt-8 text-center">
+      <button id="back-from-quiz-btn" class="submit-btn">Volver al inicio 🏠</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <p id="modal-message" class="text-blue-800 text-lg mb-4"></p>
+      <button id="modal-close-btn" class="submit-btn">Aceptar</button>
+    </div>
+  </div>
+
+  <script>
+    const welcomeSection = document.getElementById('welcome-section');
+    const quizSection = document.getElementById('quiz-section');
+    const quizForm = document.getElementById('quiz-form');
+    const questionsContainer = document.getElementById('questions-container');
+    const resultsDiv = document.getElementById('results');
+    const modal = document.getElementById('modal');
+    const modalMessage = document.getElementById('modal-message');
+
+    document.getElementById('start-quiz-btn').addEventListener('click', () => {
+      renderQuestions();
+      welcomeSection.classList.add('hidden');
+      quizSection.classList.remove('hidden');
+    });
+    document.getElementById('back-from-quiz-btn').addEventListener('click', () => {
+      quizSection.classList.add('hidden');
+      welcomeSection.classList.remove('hidden');
+    });
+    document.getElementById('modal-close-btn').addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+
+    function showModal(msg) {
+      modalMessage.textContent = msg;
+      modal.style.display = 'flex';
+    }
+
+    const rawQuestions = [
+      {
+        question: "Un docente sorprende a un estudiante consumiendo alcohol dentro de la institución. ¿Qué pasos debe seguir?",
+        options: [
+          "Retira inmediatamente al estudiante y comunica a la Policía.",
+          "Registra en el observador, informa al coordinador y escucha la versión del estudiante.*",
+          "Llama al acudiente para recoger al estudiante.",
+          "Aplica una sanción directa y definitiva."
+        ]
+      }
+    ];
+
+    const questions = rawQuestions.map(q => {
+      let correct = '';
+      const opts = q.options.map(opt => {
+        if (opt.includes('*')) {
+          correct = opt.replace('*','').trim();
+          return correct;
+        }
+        return opt;
+      });
+      return { question: q.question, options: opts, correctAnswer: correct };
+    });
+
+    let selectedAnswers = {};
+
+    function renderQuestions() {
+      questionsContainer.innerHTML = '';
+      questions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.classList.add('question-card');
+        div.innerHTML = `
+          <p class="font-semibold">${q.question}</p>
+          ${q.options.map(opt => `
+            <div class="answer-option" data-question="${i}" data-answer="${opt}">
+              ${opt}
+            </div>`).join('')}
+        `;
+        questionsContainer.appendChild(div);
+      });
+      document.querySelectorAll('.answer-option').forEach(opt => {
+        opt.addEventListener('click', e => {
+          const idx = e.currentTarget.dataset.question;
+          document.querySelectorAll(`[data-question="${idx}"]`).forEach(o => o.classList.remove('selected'));
+          e.currentTarget.classList.add('selected');
+          selectedAnswers[idx] = e.currentTarget.dataset.answer;
+        });
+      });
+    }
+
+    quizForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = document.getElementById('quiz-name').value;
+      const area = document.getElementById('quiz-area').value;
+      if (!name || !area) return showModal("Por favor completa tus datos.");
+
+      let score = 0;
+      questions.forEach((q,i) => {
+        if (selectedAnswers[i] === q.correctAnswer) score++;
+      });
+
+      // --- Guardar en Google Sheets ---
+      const appsScriptURL = "TU_URL_DE_APP_SCRIPT"; // 👈 reemplaza aquí
+      const formData = { teacherName: name, teacherArea: area, score: score, quizResults: questions };
+
+      try {
+        const response = await fetch(appsScriptURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        const result = await response.json();
+        if (result.status === "success") {
+          showModal("✅ Resultados guardados correctamente.");
+        } else {
+          showModal("❌ Error: " + result.message);
+        }
+      } catch (err) {
+        showModal("❌ Error al conectar con Google Apps Script.");
+      }
+
+      resultsDiv.innerHTML = `<p class="text-xl">Puntuación: ${score} / ${questions.length}</p>`;
+      resultsDiv.classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>
